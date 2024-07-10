@@ -9,80 +9,62 @@ def sigmoid(x):
 def sigmoid_derive(x):
     return sigmoid(x)*(1-sigmoid(x))
 
-#forward function
-def forward(x, w1, w2, predict = False):
-    a1 = np.matmul(x,w1)
-    z1 = sigmoid(a1)
+# Define the hyperparameters
+input_size = int(input("Enter the input size: "))
+hidden_size = 4        #the number of neurons in the hidden layer(s) of a neural network
+output_size = 1
+learning_rate = 0.1
+epochs = 100
 
-    #creat and add bias
-    bias = np.ones((len(z1),1))
-    z1 = np.concatenate((bias,z1), axis = 1)
-    a2 = np.matmul(z1,w2)
-    z2 = sigmoid(a2)
-    if predict:
-        return z2
-    return a1, z1, a2, z2
+# Define the XOR input and output data
+X = np.random.randint(2, size=(4, input_size))
+y = np.logical_xor.reduce(X, axis=1).reshape(-1, 1).astype(int)
 
-#backprop function
-def backprop(a2, z0, z1, z2, y):
-    delta2 = z2 - y
-    Delta2 = np.matmul.dot(z1.T,delta2)
-    delta1 = (delta2.dot(w2[1:,:].T))*sigmoid_derive(a1)
-    Delta1 = np.matmul(z0.T,delta1)
-    return delta2, Delta2, Delta1
+# Initialize the weights and biases
+np.random.seed(0)
+weights_input_hidden = np.random.uniform(size=(input_size, hidden_size))
+biases_hidden = np.random.uniform(size=(1, hidden_size))
+weights_hidden_output = np.random.uniform(size=(hidden_size, output_size))
+biases_output = np.random.uniform(size=(1, output_size))
+
+# Training loop
+for epoch in range(epochs):
+
+    #previous_weights = weights.copy()  # Make a copy of the initial weights
+    
+    # Forward propagation
+    hidden_layer_input = np.dot(X, weights_input_hidden) + biases_hidden
+    hidden_layer_output = sigmoid(hidden_layer_input)
+    output_layer_input = np.dot(hidden_layer_output, weights_hidden_output) + biases_output
+    output_layer_output = sigmoid(output_layer_input)
+
+    # Backpropagation
+    error = y - output_layer_output
+    d_output = error * sigmoid_derivative(output_layer_output)
+    error_hidden = d_output.dot(weights_hidden_output.T)
+    d_hidden = error_hidden * sigmoid_derivative(hidden_layer_output)
+
+    # Update weights and biases
+    weights_hidden_output += hidden_layer_output.T.dot(d_output) * learning_rate
+    biases_output += np.sum(d_output, axis=0, keepdims=True) * learning_rate
+    weights_input_hidden += X.T.dot(d_hidden) * learning_rate
+    biases_hidden += np.sum(d_hidden, axis=0, keepdims=True) * learning_rate
+
+    # Check the stop condition
+    #if previous_weights = weights:
+        #break
+    
+# Testing the trained model
+hidden_layer_input = np.dot(X, weights_input_hidden) + biases_hidden
+hidden_layer_output = sigmoid(hidden_layer_input)
+output_layer_input = np.dot(hidden_layer_output, weights_hidden_output) + biases_output
+output_layer_output = sigmoid(output_layer_input)
+
+print("Input Data:")
+print(X)
+print("Truth Output:")
+print(y)
+print("Predicted Output:")
+print(output_layer_output)
 
 
-#first column = bias
-x = np.array([[1,1,0],
-              [1,0,1],
-              [1,0,0],
-              [1,1,1]])
-#output
-y = np.array([[1],[1],[0],[0]])
-
-#init weights
-w1 = np.randm.randn(3,5)
-w2 = np.randm.randn(6,1)
-
-#init learning rate
-lr = 0.09
-
-costs = []
-
-#init epochs
-epochs = 15000
-
-m = len(x)
-
-#start training
-for i in range(epochs):
-
-    #forward
-    a1, z1, a2, z2 = forward(x, w1, w2)
-
-    #backprop
-    delta2, Delta2, Delta1 = backprop(a2, x, z1, z2, y)
-
-    w1 -= lr*(1/m)*Delta1
-    w2 -= lr*(1/m)*Delta2
-
-    #add costs to list for plotting
-    c = np.mean(np.abs(delta2))
-    costs.append(c)
-
-    if i % 1000 == 0:
-        print(f"Iteration: {i}. Error: {c}")
-
-#training comlate
-print("Traning complete.")
-
-#make predictions
-z3 = forward(x, w1, w2, True)
-print("Percentages: ")
-print(z3)
-print("Percentages: ")
-print(np.round(z3))
-
-#plot cost
-plt.plot(costs)
-plt.show()
